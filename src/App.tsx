@@ -1,9 +1,23 @@
-import { SignIn, Show, UserButton } from '@clerk/react'
+// App.tsx
+// The root component. It has two responsibilities:
+//   1. Show the landing/login page when the user is signed out
+//   2. Show the app shell (sidebar + page content) when signed in
+//
+// The shell layout is: NavBar fixed on the left, main content fills the rest.
+// React Router's <Routes> decides which page component to render based on the URL.
+
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { Show, SignIn } from '@clerk/react'
+import NavBar from './components/NavBar'
+import Dashboard from './pages/Dashboard'
+import Transactions from './pages/Transactions'
+import Upload from './pages/Upload'
 import './App.css'
 
 export default function App() {
   return (
     <>
+      {/* ── Signed out: show the landing / login page ── */}
       <Show when="signed-out">
         <div className="landing">
           <div className="landing-left">
@@ -29,19 +43,35 @@ export default function App() {
         </div>
       </Show>
 
+      {/* ── Signed in: show the app shell ── */}
       <Show when="signed-in">
-        <div className="dashboard-shell">
-          <header className="topbar">
-            <div className="brand">
-              <span className="brand-icon">📊</span>
-              <span className="brand-name">FinanceAnalyzer</span>
-            </div>
-            <UserButton />
-          </header>
-          <main className="dashboard-main">
-            <h1>Welcome back</h1>
-            <p className="dashboard-sub">Your dashboard is coming soon.</p>
+        <div className="app-shell">
+
+          {/* Sidebar — always mounted, expands on hover via CSS */}
+          <NavBar />
+
+          {/*
+            Main content area. The left padding (64px) matches the collapsed
+            navbar width so content is never hidden behind it.
+          */}
+          <main className="app-main">
+            <Routes>
+              {/* Redirect the root URL to /dashboard */}
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+              <Route path="/dashboard"    element={<Dashboard />} />
+              <Route path="/transactions" element={<Transactions />} />
+              <Route path="/upload"       element={<Upload />} />
+
+              {/*
+                TODO: Add routes here as you build new sections:
+                <Route path="/credit"      element={<Credit />} />
+                <Route path="/investments" element={<Investments />} />
+                <Route path="/budget"      element={<Budget />} />
+              */}
+            </Routes>
           </main>
+
         </div>
       </Show>
     </>

@@ -1,4 +1,50 @@
-/* ── Landing (signed-out) ───────────────────────────────────── */
+/* App.css */
+
+/* ── App shell (signed-in layout) ──────────────────────────── */
+
+/*
+  The shell is a flex row: NavBar on the left, main content on the right.
+  NavBar is position: fixed so it doesn't scroll with the page,
+  which means we need padding-left on app-main to avoid overlap.
+*/
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  padding: 2rem;
+  /* 64px matches the collapsed navbar width */
+  padding-left: calc(64px + 2rem);
+  background: #0f1117;
+  min-height: 100vh;
+  /* Animate in sync with the navbar width transition */
+  transition: padding-left 0.2s ease;
+}
+
+/*
+  When the navbar (a sibling element) is hovered, shift the main content
+  right to match the expanded navbar width (220px).
+  The ~ selector targets a sibling that comes after .navbar in the DOM.
+*/
+.navbar:hover ~ .app-main {
+  padding-left: calc(220px + 2rem);
+}
+
+/* Shared page wrapper — use the "page" class on each page's root div */
+.page {
+  max-width: 1100px;
+}
+
+.page h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #ffffff;
+}
+
+/* ── Landing (signed-out layout) ───────────────────────────── */
 .landing {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -20,9 +66,7 @@
   margin-bottom: 3rem;
 }
 
-.brand-icon {
-  font-size: 1.5rem;
-}
+.brand-icon { font-size: 1.5rem; }
 
 .brand-name {
   font-size: 1.1rem;
@@ -58,10 +102,8 @@
 .feature-list li {
   font-size: 0.9rem;
   color: #6b7280;
-  letter-spacing: 0.01em;
 }
 
-/* ── Sign-in panel ──────────────────────────────────────────── */
 .landing-right {
   display: flex;
   align-items: center;
@@ -88,40 +130,6 @@
   margin-bottom: 1.75rem;
 }
 
-/* ── Dashboard (signed-in) ──────────────────────────────────── */
-.dashboard-shell {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 2rem;
-  background: #13161f;
-  border-bottom: 1px solid #1e2130;
-}
-
-.dashboard-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-.dashboard-main h1 {
-  font-size: 2rem;
-  font-weight: 600;
-}
-
-.dashboard-sub {
-  color: #8b90a0;
-}
-
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .landing {
@@ -130,9 +138,5 @@
 
   .landing-left {
     padding: 3rem 2rem 2rem;
-  }
-
-  .landing-right {
-    padding: 2rem;
   }
 }
