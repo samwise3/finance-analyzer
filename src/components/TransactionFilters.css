@@ -1,0 +1,79 @@
+/* TransactionFilters.css */
+
+.filters {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Type toggle group */
+.filter-group {
+    display: flex;
+    background: #13161f;
+    border: 1px solid #1e2130;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.filter-btn {
+    background: none;
+    border: none;
+    color: #8b90a0;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.filter-btn:hover {
+    color: #e8eaf0;
+}
+
+.filter-btn--active {
+    background: #1e2130;
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* Date inputs */
+.filter-dates {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-dates span {
+    font-size: 0.85rem;
+    color: #8b90a0;
+}
+
+.filter-dates input {
+    background: #13161f;
+    border: 1px solid #1e2130;
+    border-radius: 0.5rem;
+    color: #e8eaf0;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+}
+
+.filter-dates input::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+    cursor: pointer;
+}
+
+/* Reset button */
+.filter-reset {
+    background: none;
+    border: none;
+    color: #8b90a0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    transition: color 0.15s;
+}
+
+.filter-reset:hover {
+    color: #e8eaf0;
+}
