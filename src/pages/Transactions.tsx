@@ -34,7 +34,10 @@ export default function Transactions() {
 
   return (
     <div className="page">
-      <h1>Transactions</h1>
+      <div className="transactions-header">
+        <h1>Transactions</h1>
+        <p>View and manage your previously imported transactions.</p>
+      </div>
 
       {/*
         TODO: Add a search bar and filter controls here.

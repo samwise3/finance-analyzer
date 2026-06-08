@@ -3,16 +3,14 @@
 // Most banks (Chase, BoA, Wells Fargo, etc.) let you export a CSV from
 // their website under account activity or statements.
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
+import './Upload.css'
+
 import Papa from 'papaparse'
 import { useAuth } from '@clerk/react'
 import { makeSupabaseClient } from '../lib/supabase'
 import SuccessModal from '../components/SuccessModal'
 import PreviewModal from '../components/PreviewModal'
-
-
-
-
 
 
 export default function Upload() {
@@ -24,7 +22,37 @@ export default function Upload() {
   const [importedCount, setImportedCount] = useState(0)
   const [showPreview, setShowPreview] = useState(false)
   const [formatted, setFormatted] = useState<any[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [dragging, setDragging] = useState(false)
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault()  // required to allow dropping
+    setDragging(true)
+  }
+
+  function handleDragLeave() {
+    setDragging(false)
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()  // stops browser from opening the file
+    setDragging(false)
+
+    const file = e.dataTransfer.files?.[0]
+    if (!file) return
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const raw = results.data as any[]
+        setRows(raw)
+        setFormatted(formatRows(raw))
+        setShowPreview(true)
+      }
+    })
+  }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -47,17 +75,14 @@ export default function Upload() {
     const token = await getToken({ template: 'supabase' })
     const supabase = makeSupabaseClient(() => Promise.resolve(token))
 
-    const { error } = await supabase.from('transactions').insert(formatted)
-
+    const { error } = await supabase.from('transactions').upsert(formatted, {
+      onConflict: 'user_id, date, description, amount',
+      ignoreDuplicates: true
+    })
+    
     if (error) {
-      if (error.code === '23505') {
-        // 23505 is Postgres's unique violation error code
-        console.error('Some transactions already exist and were skipped')
-      } else {
-        console.error('Import failed:', error)
-      }
-    }
-    else {
+      console.error('Import failed:', error)
+    } else {
       setImportedCount(formatted.length)
       setShowSuccess(true)
       setShowPreview(false)
@@ -84,6 +109,7 @@ export default function Upload() {
   function handleUploadAnother() {
     setShowSuccess(false)
     setImportedCount(0)
+    fileInputRef.current?.click()
   }
 
   function handleCancel() {
@@ -94,22 +120,41 @@ export default function Upload() {
 
   return (
     <div className="page">
-      <h1>Upload</h1>
+      <div className="upload-header">
+        <h1>Upload Statements</h1>
+        <p>Import your bank transactions via CSV export.</p>
+      </div>
 
-      {/*
-        TODO: Add a drag-and-drop file input here.
-        Accept only .csv files. You can use the native <input type="file">
-        or a library like react-dropzone for a better UX.
-      */}
-      <input type="file" accept=".csv" onChange={handleFile} />
+      {/* Hidden native file input — triggered by clicking the zone or browse button */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv"
+        onChange={handleFile}
+        style={{ display: 'none' }}
+      />
 
-      {/*
-        TODO: Add a CSV preview / column mapping step here.
-        Different banks format their CSVs differently — column names like
-        "Transaction Date" vs "Date", "Amount" vs "Debit".
-        You'll want to show the user the first few rows and let them confirm
-        which column maps to date, description, and amount before importing.
-      */}
+      <div
+        className={`upload-zone ${dragging ? 'upload-zone--dragging' : ''}`}
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <span className="upload-icon">📂</span>
+        <h2>Drag and drop your CSV here</h2>
+        <p>Supports exports from most major banks</p>
+        <button
+          className="upload-browse"
+          onClick={e => {
+            e.stopPropagation() // prevents double-triggering the zone click
+            fileInputRef.current?.click()
+          }}
+        >
+          Browse files
+        </button>
+      </div>
+
       {showPreview && (
         <PreviewModal
           transactions={formatted}
@@ -119,20 +164,12 @@ export default function Upload() {
         />
       )}
 
-      {/*
-        TODO: On confirm, parse the CSV rows and insert them into Supabase.
-        Use makeSupabaseClient() with the Clerk token, then:
-          supabase.from('transactions').insert([...rows])
-        Supabase will attach the user ID automatically via RLS.
-      */}
-
       {showSuccess && (
-      <SuccessModal
-        rowCount={importedCount}
-        onUploadAnother={handleUploadAnother}
-      />
-      )
-    }
+        <SuccessModal
+          rowCount={importedCount}
+          onUploadAnother={handleUploadAnother}
+        />
+      )}
     </div>
   )
 }

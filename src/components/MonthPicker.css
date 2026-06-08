@@ -1,0 +1,111 @@
+/* MonthPicker.css */
+
+.month-picker {
+    position: relative;
+    display: inline-block;
+}
+
+.month-picker-label {
+    background: #1e2130;
+    border: none;
+    color: #e8eaf0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.month-picker-label:hover {
+    background: #252a3a;
+}
+
+/* Dropdown */
+.month-dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: #13161f;
+    border: 1px solid #1e2130;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    z-index: 50;
+    width: 220px;
+}
+
+/* Year row */
+.month-dropdown-year {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.month-dropdown-year span {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e8eaf0;
+}
+
+.month-dropdown-year button {
+    background: none;
+    border: none;
+    color: #8b90a0;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.4rem;
+    transition: color 0.15s, background 0.15s;
+}
+
+.month-dropdown-year button:hover:not(:disabled) {
+    color: #e8eaf0;
+    background: #1e2130;
+}
+
+.month-dropdown-year button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Month grid — 4 columns */
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+}
+
+.month-cell {
+    background: none;
+    border: none;
+    color: #8b90a0;
+    font-size: 0.85rem;
+    padding: 0.4rem 0;
+    border-radius: 0.4rem;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s, color 0.15s;
+}
+
+.month-cell:hover:not(:disabled) {
+    background: #1e2130;
+    color: #e8eaf0;
+}
+
+/* Currently selected month */
+.month-cell--active {
+    background: #1e2130;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* Future months */
+.month-cell--disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}

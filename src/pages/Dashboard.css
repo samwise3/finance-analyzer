@@ -1,0 +1,96 @@
+/* Dashboard.css */
+
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+
+/* Stat cards row */
+.stat-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: #13161f;
+    border: 1px solid #1e2130;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stat-title {
+    font-size: 0.8rem;
+    color: #8b90a0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+
+/* Recent transactions section */
+.dashboard-recent {
+    background: #13161f;
+    border: 1px solid #1e2130;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.dashboard-recent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.dashboard-recent-header h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.dashboard-recent-header a {
+    font-size: 0.85rem;
+    color: #8b90a0;
+    text-decoration: none;
+}
+
+.dashboard-recent-header a:hover {
+    color: #e8eaf0;
+}
+
+.dashboard-empty {
+    color: #8b90a0;
+    font-size: 0.9rem;
+}
+
+.dashboard-empty a {
+    color: #ffffff;
+}
+
+.dashboard-loading {
+    color: #8b90a0;
+}
+
+/* Responsive — stack cards on smaller screens */
+@media (max-width: 768px) {
+    .stat-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
