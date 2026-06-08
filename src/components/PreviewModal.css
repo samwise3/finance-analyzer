@@ -1,0 +1,28 @@
+/* PreviewModal.css */
+
+/* Wider than SuccessModal to fit the table */
+.modal--wide {
+    max-width: 720px;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.modal--wide h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.modal-sub {
+    font-size: 0.9rem;
+    color: #8b90a0;
+    margin-bottom: 0.5rem;
+}
+
+/* Scrollable so buttons stay visible regardless of row count */
+.preview-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 300px;
+}

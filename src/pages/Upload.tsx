@@ -8,6 +8,9 @@ import Papa from 'papaparse'
 import { useAuth } from '@clerk/react'
 import { makeSupabaseClient } from '../lib/supabase'
 import SuccessModal from '../components/SuccessModal'
+import PreviewModal from '../components/PreviewModal'
+
+
 
 
 
@@ -19,7 +22,8 @@ export default function Upload() {
   const { getToken, userId } = useAuth()
   const [showSuccess, setShowSuccess] = useState(false)
   const [importedCount, setImportedCount] = useState(0)
-
+  const [showPreview, setShowPreview] = useState(false)
+  const [formatted, setFormatted] = useState<any[]>([])
 
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -30,40 +34,51 @@ export default function Upload() {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        setHeaders(Object.keys(results.data[0] as object))
-        setRows(results.data as any[])
+        const raw = results.data as any[]
+        setRows(raw)
+        setFormatted(formatRows(raw))
+        setShowPreview(true)
       }
     })
   }
 
   async function handleImport() {
     setImporting(true)
-
-    const supabase = makeSupabaseClient(() => Promise.resolve(token))
     const token = await getToken({ template: 'supabase' })
+    const supabase = makeSupabaseClient(() => Promise.resolve(token))
 
-    const formatted = rows.map(row => ({
+    const { error } = await supabase.from('transactions').insert(formatted)
+
+    if (error) {
+      if (error.code === '23505') {
+        // 23505 is Postgres's unique violation error code
+        console.error('Some transactions already exist and were skipped')
+      } else {
+        console.error('Import failed:', error)
+      }
+    }
+    else {
+      setImportedCount(formatted.length)
+      setShowSuccess(true)
+      setShowPreview(false)
+      setRows([])
+      setFormatted([])
+    }
+
+    setImporting(false)
+  }
+
+  function formatRows(rows: any[]) {
+    return rows.map(row => ({
+      id: crypto.randomUUID(),
       user_id: userId,
       date: row['Post Date'],
       description: row['Description'],
+      category: null,
       amount: row['Credit']
         ? parseFloat(row['Credit'])
         : parseFloat(row['Debit']) * -1,
     }))
-
-    console.log('token:', token) 
-
-    const { error } = await supabase.from('transactions').insert(formatted)
-
-    if (error) console.error('Import failed:', error)
-    else {
-      setImportedCount(rows.length)
-      setShowSuccess(true)
-      setRows([])
-      setHeaders([])
-    }
-
-    setImporting(false)
   }
 
   function handleUploadAnother() {
@@ -71,7 +86,11 @@ export default function Upload() {
     setImportedCount(0)
   }
 
-  // in the return, just before the closing </div>:
+  function handleCancel() {
+    setShowPreview(false)
+    setRows([])
+    setFormatted([])
+  }
 
   return (
     <div className="page">
@@ -91,28 +110,13 @@ export default function Upload() {
         You'll want to show the user the first few rows and let them confirm
         which column maps to date, description, and amount before importing.
       */}
-      {rows.length > 0 && (
-        <div>
-          <h2>Preview</h2>
-          <table>
-            <thead>
-              <tr>
-                {headers.map(header => (
-                  <th key={header}>{header}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.slice(0, 5).map((row, i) => (
-                <tr key={i}>
-                  {headers.map(header => (
-                    <td key={header}>{row[header]}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {showPreview && (
+        <PreviewModal
+          transactions={formatted}
+          onConfirm={handleImport}
+          onCancel={handleCancel}
+          importing={importing}
+        />
       )}
 
       {/*
@@ -121,12 +125,6 @@ export default function Upload() {
           supabase.from('transactions').insert([...rows])
         Supabase will attach the user ID automatically via RLS.
       */}
-
-      {rows.length > 0 && (
-        <button onClick={handleImport} disabled={importing}>
-          {importing ? 'Importing...' : `Import ${rows.length} transactions`}
-        </button>
-      )}
 
       {showSuccess && (
       <SuccessModal

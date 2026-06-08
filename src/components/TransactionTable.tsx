@@ -15,9 +15,12 @@ interface Transaction {
 
 interface Props {
     transactions: Transaction[]
+    preview?: boolean
 }
 
-export default function TransactionTable({ transactions }: Props) {
+export default function TransactionTable({ transactions, preview }: Props) {
+    const rows = preview ? transactions.slice(0, 5) : transactions
+    
     return (
         <table className="transactions-table">
             <thead>
@@ -29,7 +32,7 @@ export default function TransactionTable({ transactions }: Props) {
                 </tr>
             </thead>
             <tbody>
-                {transactions.map(t => (
+                {rows.map(t => (
                     <tr key={t.id}>
                         <td>{new Date(t.date).toLocaleDateString()}</td>
                         <td>{t.description}</td>
