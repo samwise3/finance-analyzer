@@ -5,11 +5,21 @@
 
 import React, { useState } from 'react'
 import Papa from 'papaparse'
+import { useAuth } from '@clerk/react'
+import { makeSupabaseClient } from '../lib/supabase'
+import SuccessModal from '../components/SuccessModal'
+
+
+
 
 export default function Upload() {
   const [rows, setRows] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
   const [importing, setImporting] = useState(false)
+  const { getToken, userId } = useAuth()
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [importedCount, setImportedCount] = useState(0)
+
 
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -26,6 +36,42 @@ export default function Upload() {
     })
   }
 
+  async function handleImport() {
+    setImporting(true)
+
+    const supabase = makeSupabaseClient(() => Promise.resolve(token))
+    const token = await getToken({ template: 'supabase' })
+
+    const formatted = rows.map(row => ({
+      user_id: userId,
+      date: row['Post Date'],
+      description: row['Description'],
+      amount: row['Credit']
+        ? parseFloat(row['Credit'])
+        : parseFloat(row['Debit']) * -1,
+    }))
+
+    console.log('token:', token) 
+
+    const { error } = await supabase.from('transactions').insert(formatted)
+
+    if (error) console.error('Import failed:', error)
+    else {
+      setImportedCount(rows.length)
+      setShowSuccess(true)
+      setRows([])
+      setHeaders([])
+    }
+
+    setImporting(false)
+  }
+
+  function handleUploadAnother() {
+    setShowSuccess(false)
+    setImportedCount(0)
+  }
+
+  // in the return, just before the closing </div>:
 
   return (
     <div className="page">
@@ -75,6 +121,20 @@ export default function Upload() {
           supabase.from('transactions').insert([...rows])
         Supabase will attach the user ID automatically via RLS.
       */}
+
+      {rows.length > 0 && (
+        <button onClick={handleImport} disabled={importing}>
+          {importing ? 'Importing...' : `Import ${rows.length} transactions`}
+        </button>
+      )}
+
+      {showSuccess && (
+      <SuccessModal
+        rowCount={importedCount}
+        onUploadAnother={handleUploadAnother}
+      />
+      )
+    }
     </div>
   )
 }

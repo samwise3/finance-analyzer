@@ -1,0 +1,37 @@
+/* TransactionTable.css */
+
+.transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.transactions-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    color: #8b90a0;
+    font-weight: 500;
+    border-bottom: 1px solid #1e2130;
+}
+
+.transactions-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #1e2130;
+    color: #e8eaf0;
+}
+
+/* Subtle hover highlight on each row */
+.transactions-table tbody tr:hover {
+    background: #1e2130;
+}
+
+/* Debits in red, credits in green */
+.amount-debit {
+    color: #f87171;
+    font-weight: 500;
+}
+
+.amount-credit {
+    color: #4ade80;
+    font-weight: 500;
+}

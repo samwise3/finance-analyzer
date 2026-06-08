@@ -1,8 +1,37 @@
 // Transactions.tsx
 // Displays all of the user's imported transactions in a searchable,
 // filterable table. Data comes from your Supabase `transactions` table.
+import { useEffect, useState } from 'react'
+import { useAuth } from '@clerk/react'
+import { makeSupabaseClient } from '../lib/supabase'
+import TransactionTable from '../components/TransactionTable'
+
 
 export default function Transactions() {
+  const { getToken, userId } = useAuth()
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  async function fetchTransactions() {
+    const token = await getToken({ template: 'supabase' })
+    const supabase = makeSupabaseClient(() => Promise.resolve(token))
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('date', { ascending: false })
+
+    if (error) console.error('Fetch failed:', error)
+    else setTransactions(data)
+
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchTransactions()
+  }, [])
+
+
   return (
     <div className="page">
       <h1>Transactions</h1>
@@ -23,6 +52,9 @@ export default function Transactions() {
         see their own transactions — you don't need to filter by user ID
         manually in your query.
       */}
+      {!loading && transactions.length > 0 && (
+        <TransactionTable transactions={transactions} />
+      )}
     </div>
   )
 }
