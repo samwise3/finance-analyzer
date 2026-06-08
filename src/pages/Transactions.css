@@ -1,0 +1,48 @@
+/* Transactions.css */
+
+/* Search bar + filters stacked vertically with a gap */
+.transactions-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.transactions-status {
+    color: #8b90a0;
+    font-size: 0.9rem;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.pagination span {
+    font-size: 0.9rem;
+    color: #8b90a0;
+}
+
+.pagination button {
+    background: #13161f;
+    border: 1px solid #1e2130;
+    color: #e8eaf0;
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: #1e2130;
+}
+
+.pagination button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}

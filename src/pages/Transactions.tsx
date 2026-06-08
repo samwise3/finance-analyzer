@@ -1,16 +1,41 @@
 // Transactions.tsx
-// Displays all of the user's imported transactions in a searchable,
-// filterable table. Data comes from your Supabase `transactions` table.
+// Fetches all transactions from Supabase, then filters and paginates
+// them client-side based on search, type, and date range state.
+
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/react'
 import { makeSupabaseClient } from '../lib/supabase'
 import TransactionTable from '../components/TransactionTable'
+import SearchBar from '../components/SearchBar'
+import TransactionFilters, { FilterType } from '../components/TransactionFilters'
+import './Transactions.css'
 
+const PAGE_SIZE = 25
 
 export default function Transactions() {
-  const { getToken, userId } = useAuth()
+  const { getToken } = useAuth()
+
+  // Raw data from Supabase
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Filter state
+  const [search, setSearch] = useState('')
+  const [type, setType] = useState<FilterType>('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+
+  useEffect(() => {
+    fetchTransactions()
+  }, [])
+
+  // Reset to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, type, dateFrom, dateTo])
 
   async function fetchTransactions() {
     const token = await getToken({ template: 'supabase' })
@@ -27,36 +52,85 @@ export default function Transactions() {
     setLoading(false)
   }
 
-  useEffect(() => {
-    fetchTransactions()
-  }, [])
+  function handleReset() {
+    setSearch('')
+    setType('all')
+    setDateFrom('')
+    setDateTo('')
+  }
 
+  // Derive filtered transactions from raw data
+  const filtered = transactions.filter(t => {
+    // Search filter — case insensitive description match
+    if (search && !t.description.toLowerCase().includes(search.toLowerCase()))
+      return false
+
+    // Type filter
+    if (type === 'income' && t.amount <= 0) return false
+    if (type === 'expenses' && t.amount >= 0) return false
+
+    // Date range filter
+    if (dateFrom && t.date < dateFrom) return false
+    if (dateTo && t.date > dateTo) return false
+
+    return true
+  })
+
+  // Pagination — slice the filtered array for the current page
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  )
 
   return (
     <div className="page">
-      <div className="transactions-header">
-        <h1>Transactions</h1>
-        <p>View and manage your previously imported transactions.</p>
+      <h1>Transactions</h1>
+
+      <div className="transactions-toolbar">
+        <SearchBar value={search} onChange={setSearch} />
+        <TransactionFilters
+          type={type}
+          onTypeChange={setType}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateFromChange={setDateFrom}
+          onDateToChange={setDateTo}
+          onReset={handleReset}
+        />
       </div>
 
-      {/*
-        TODO: Add a search bar and filter controls here.
-        Useful filters: date range, category, amount range.
-        These can be local state that filters the fetched data client-side,
-        or passed as query params to Supabase for server-side filtering.
-      */}
+      {loading && <p className="transactions-status">Loading...</p>}
 
-      {/*
-        TODO: Add the transactions table here.
-        Columns to consider: date, description, category, amount.
+      {!loading && filtered.length === 0 && (
+        <p className="transactions-status">No transactions match your filters.</p>
+      )}
 
-        Each row will be a transaction fetched from Supabase.
-        Remember: RLS policies will automatically ensure users only
-        see their own transactions — you don't need to filter by user ID
-        manually in your query.
-      */}
-      {!loading && transactions.length > 0 && (
-        <TransactionTable transactions={transactions} />
+      {!loading && filtered.length > 0 && (
+        <>
+          <TransactionTable transactions={paginated} />
+
+          {/* Pagination controls — only show if more than one page */}
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                onClick={() => setCurrentPage(p => p - 1)}
+                disabled={currentPage === 1}
+              >
+                ← Prev
+              </button>
+
+              <span>{currentPage} of {totalPages}</span>
+
+              <button
+                onClick={() => setCurrentPage(p => p + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
