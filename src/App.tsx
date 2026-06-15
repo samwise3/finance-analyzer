@@ -31,15 +31,15 @@ export default function App() {
         <div className="landing">
           <div className="landing-left">
             <div className="brand">
-              <span className="brand-icon">📊</span>
-              <span className="brand-name">FinanceAnalyzer</span>
+              <span className="brand-icon">🦉</span>
+              <span className="brand-name">Wallet Wise</span>
             </div>
             <h1>Your money,<br />clearly understood.</h1>
             <p>Track spending, analyze trends, and take control of your financial life — all in one place.</p>
             <ul className="feature-list">
-              <li>✦ Automatic transaction categorization</li>
-              <li>✦ Spending trends &amp; insights</li>
-              <li>✦ Budget tracking &amp; alerts</li>
+              <li>✦ Connect all your financial accounts</li>
+              <li>✦ See spending trends &amp; insights</li>
+              <li>✦ Set budget goals &amp; use tracking metrics</li>
             </ul>
           </div>
           <div className="landing-right">

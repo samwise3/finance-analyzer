@@ -29,8 +29,8 @@ export default function NavBar() {
     <nav className="navbar">
       {/* Brand mark — visible in both collapsed and expanded states */}
       <div className="nav-brand">
-        <span className="nav-icon">📊</span>
-        <span className="nav-label">FinanceAnalyzer</span>
+        <span className="nav-icon">🦉</span>
+        <span className="nav-label">Wallet Wise</span>
       </div>
 
       {/* Main nav links */}
