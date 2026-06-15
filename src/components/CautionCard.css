@@ -1,0 +1,38 @@
+/* ── Caution card modal ── */
+.caution-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.caution-card {
+  background: #13161f;
+  border: 1px solid #2a2f45;
+  border-radius: 1rem;
+  padding: 2rem 2.25rem;
+  max-width: 400px;
+  width: calc(100% - 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+.caution-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fbbf24;
+  margin: 0;
+}
+
+.caution-body {
+  font-size: 0.9rem;
+  color: #8b90a0;
+  line-height: 1.6;
+  margin: 0;
+}
