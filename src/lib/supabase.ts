@@ -40,8 +40,8 @@ let currentToken: string | null = null
  *   const { data } = await supabase.from('transactions').select('*')
  */
 export async function getSupabaseClient(
-  getToken: () => Promise<string | null>
+  getToken: (options?: Record<string, unknown>) => Promise<string | null>
 ): Promise<SupabaseClient> {
-  currentToken = await getToken({ template: 'supabase' } as any)
+  currentToken = await getToken({ template: 'supabase' })
   return client
 }
