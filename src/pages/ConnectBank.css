@@ -1,0 +1,244 @@
+/* ConnectBank.css */
+
+.connect-header {
+  margin-bottom: 2rem;
+}
+
+.connect-header p {
+  color: #8b90a0;
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}
+
+.connect-error {
+  font-size: 0.9rem;
+  color: #f87171;
+  margin-bottom: 1rem;
+}
+
+/* Connected accounts list */
+.accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 560px;
+  margin-bottom: 1.5rem;
+}
+
+.account-item {
+  background: #13161f;
+  border: 1px solid #1e2130;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.account-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.account-item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.account-item-type {
+  font-size: 0.8rem;
+  color: #8b90a0;
+}
+
+.account-item-date {
+  font-size: 0.8rem;
+  color: #8b90a0;
+}
+
+/* Remove button */
+.account-remove-btn {
+  background: none;
+  border: 1px solid #1e2130;
+  border-radius: 0.5rem;
+  color: #8b90a0;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.account-remove-btn:hover {
+  border-color: #f87171;
+  color: #f87171;
+}
+
+/* Inline remove confirmation */
+.account-confirm-remove {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.account-confirm-remove span {
+  font-size: 0.85rem;
+  color: #8b90a0;
+  white-space: nowrap;
+}
+
+/* Confirmation card */
+.connect-confirm-card {
+  background: #13161f;
+  border: 1px solid #1e2130;
+  border-radius: 0.75rem;
+  padding: 1.75rem;
+  max-width: 520px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.connect-confirm-card h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.connect-confirm-sub {
+  font-size: 0.875rem;
+  color: #8b90a0;
+  margin-top: -0.75rem;
+}
+
+/* Form fields */
+.confirm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.confirm-field label {
+  font-size: 0.8rem;
+  color: #8b90a0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.confirm-field input {
+  background: #0f1117;
+  border: 1px solid #1e2130;
+  border-radius: 0.5rem;
+  color: #e8eaf0;
+  font-size: 0.95rem;
+  padding: 0.65rem 0.75rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.confirm-field input:focus {
+  border-color: #4a5568;
+}
+
+/* Account type toggle */
+.account-type-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.account-type-btn {
+  background: #0f1117;
+  border: 1px solid #1e2130;
+  border-radius: 0.5rem;
+  color: #8b90a0;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.account-type-btn:hover {
+  color: #e8eaf0;
+}
+
+.account-type-btn--active {
+  background: #1e2130;
+  border-color: #4a5568;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+/* Confirm action buttons */
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Add account section */
+.connect-add {
+  max-width: 520px;
+}
+
+.connect-info {
+  background: #13161f;
+  border: 1px solid #1e2130;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.connect-info h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 1rem;
+}
+
+.connect-info ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.connect-info li {
+  font-size: 0.9rem;
+  color: #8b90a0;
+}
+
+.connect-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: #ffffff;
+  color: #0f1117;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.connect-btn:hover:not(:disabled) {
+  background: #e8eaf0;
+}
+
+.connect-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.connect-transactions-link {
+  font-size: 0.875rem;
+  color: #8b90a0;
+  margin-top: 1rem;
+}
+
+.connect-transactions-link a {
+  color: #ffffff;
+}

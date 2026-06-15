@@ -13,6 +13,12 @@ import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
 import Upload from './pages/Upload'
 import './App.css'
+import ConnectBank from './pages/ConnectBank'
+import Imports from './pages/Imports'
+import Budget from './pages/Budget'
+
+
+
 
 export default function App() {
   return (
@@ -62,12 +68,14 @@ export default function App() {
               <Route path="/dashboard"    element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/upload"       element={<Upload />} />
+              <Route path="/connect" element={<ConnectBank />} />
+              <Route path="/imports" element={<Imports />} />
+              <Route path="/budget"  element={<Budget />} />
 
               {/*
                 TODO: Add routes here as you build new sections:
                 <Route path="/credit"      element={<Credit />} />
                 <Route path="/investments" element={<Investments />} />
-                <Route path="/budget"      element={<Budget />} />
               */}
             </Routes>
           </main>
