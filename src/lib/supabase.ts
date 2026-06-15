@@ -1,32 +1,47 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 /**
- * Creates a Supabase client authenticated with the current Clerk session token.
- * Pass the `getToken` function from Clerk's `useAuth()` hook.
+ * A single shared Supabase client instance.
+ * We use one client and update its auth token per-request
+ * rather than creating a new client on every call — this
+ * prevents the "Multiple GoTrueClient instances" warning.
+ */
+const client: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: async (url, options = {}) => {
+      // getToken is set before each request via setAuthToken below
+      const token = currentToken
+      const headers = new Headers((options as RequestInit).headers)
+      if (token) headers.set('Authorization', `Bearer ${token}`)
+      return fetch(url, { ...options, headers })
+    },
+  },
+  auth: {
+    // Disable Supabase's own auth persistence — Clerk handles auth
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+})
+
+// Holds the current Clerk JWT — updated before each request
+let currentToken: string | null = null
+
+/**
+ * Returns the shared Supabase client with the Clerk token attached.
+ * Call this before any Supabase query.
  *
  * Usage:
  *   const { getToken } = useAuth()
- *   const supabase = makeSupabaseClient(getToken)
+ *   const supabase = await getSupabaseClient(getToken)
+ *   const { data } = await supabase.from('transactions').select('*')
  */
-export function makeSupabaseClient(
+export async function getSupabaseClient(
   getToken: () => Promise<string | null>
-) {
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      fetch: async (url, options = {}) => {
-        const token = await getToken()
-        const headers = new Headers((options as RequestInit).headers)
-        if (token) headers.set('Authorization', `Bearer ${token}`)
-        return fetch(url, { ...options, headers })
-      },
-    },
-  })
+): Promise<SupabaseClient> {
+  currentToken = await getToken({ template: 'supabase' } as any)
+  return client
 }
-
-/**
- * Unauthenticated Supabase client — only use for public (non-RLS) data.
- */
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)

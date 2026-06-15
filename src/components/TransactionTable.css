@@ -25,6 +25,12 @@
     background: #1e2130;
 }
 
+/* Account source label — slightly muted */
+.account-label {
+    color: #8b90a0;
+    font-size: 0.85rem;
+}
+
 /* Debits in red, credits in green */
 .amount-debit {
     color: #f87171;

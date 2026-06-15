@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/react'
-import { makeSupabaseClient } from '../lib/supabase'
+import { getSupabaseClient } from '../lib/supabase'
 import TransactionTable from '../components/TransactionTable'
 import SearchBar from '../components/SearchBar'
 import TransactionFilters, { FilterType } from '../components/TransactionFilters'
@@ -38,17 +38,35 @@ export default function Transactions() {
   }, [search, type, dateFrom, dateTo])
 
   async function fetchTransactions() {
-    const token = await getToken({ template: 'supabase' })
-    const supabase = makeSupabaseClient(() => Promise.resolve(token))
+    const supabase = await getSupabaseClient(getToken)
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('date', { ascending: false })
+    // Fetch transactions, plaid accounts, and csv imports in parallel
+    const [txResult, plaidResult, csvResult] = await Promise.all([
+      supabase.from('transactions').select('*').order('date', { ascending: false }),
+      supabase.from('plaid_items').select('item_id, institution_name'),
+      supabase.from('csv_imports').select('id, file_name'),
+    ])
 
-    if (error) console.error('Fetch failed:', error)
-    else setTransactions(data)
+    if (txResult.error) { console.error('Fetch failed:', txResult.error); setLoading(false); return }
 
+    // Build lookup maps so we can label each transaction by its source
+    const plaidMap = new Map<string, string>(
+      (plaidResult.data ?? []).map((p: any) => [p.item_id, p.institution_name])
+    )
+    const csvMap = new Map<string, string>(
+      (csvResult.data ?? []).map((c: any) => [c.id, c.file_name])
+    )
+
+    const withAccount = txResult.data.map((t: any) => ({
+      ...t,
+      account: t.item_id
+        ? plaidMap.get(t.item_id) ?? 'Bank'
+        : t.import_id
+          ? csvMap.get(t.import_id) ?? 'CSV Import'
+          : undefined,
+    }))
+
+    setTransactions(withAccount)
     setLoading(false)
   }
 

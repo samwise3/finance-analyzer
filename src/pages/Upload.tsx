@@ -1,33 +1,33 @@
 // Upload.tsx
 // Lets users import their transaction history via CSV export from their bank.
-// Most banks (Chase, BoA, Wells Fargo, etc.) let you export a CSV from
-// their website under account activity or statements.
+// On import, creates a csv_imports record first, then attaches import_id
+// to every transaction row so imports can be tracked and bulk-deleted later.
 
 import React, { useState, useRef } from 'react'
 import './Upload.css'
 
 import Papa from 'papaparse'
 import { useAuth } from '@clerk/react'
-import { makeSupabaseClient } from '../lib/supabase'
+import { getSupabaseClient } from '../lib/supabase'
 import SuccessModal from '../components/SuccessModal'
 import PreviewModal from '../components/PreviewModal'
 
-
 export default function Upload() {
-  const [rows, setRows] = useState<any[]>([])
-  const [headers, setHeaders] = useState<string[]>([])
+  const [rows, setRows]           = useState<any[]>([])
+  const [headers, setHeaders]     = useState<string[]>([])
   const [importing, setImporting] = useState(false)
-  const { getToken, userId } = useAuth()
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [showSuccess, setShowSuccess]   = useState(false)
   const [importedCount, setImportedCount] = useState(0)
-  const [showPreview, setShowPreview] = useState(false)
+  const [showPreview, setShowPreview]   = useState(false)
   const [formatted, setFormatted] = useState<any[]>([])
+  const [fileName, setFileName]   = useState('')
+  const [dragging, setDragging]   = useState(false)
+
+  const { getToken, userId } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [dragging, setDragging] = useState(false)
-
   function handleDragOver(e: React.DragEvent) {
-    e.preventDefault()  // required to allow dropping
+    e.preventDefault()
     setDragging(true)
   }
 
@@ -36,28 +36,26 @@ export default function Upload() {
   }
 
   function handleDrop(e: React.DragEvent) {
-    e.preventDefault()  // stops browser from opening the file
+    e.preventDefault()
     setDragging(false)
 
     const file = e.dataTransfer.files?.[0]
     if (!file) return
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const raw = results.data as any[]
-        setRows(raw)
-        setFormatted(formatRows(raw))
-        setShowPreview(true)
-      }
-    })
+    setFileName(file.name)
+    parseFile(file)
   }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
 
+    setFileName(file.name)
+    parseFile(file)
+  }
+
+  // Extracted into its own function since both handleFile and handleDrop need it
+  function parseFile(file: File) {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -68,29 +66,6 @@ export default function Upload() {
         setShowPreview(true)
       }
     })
-  }
-
-  async function handleImport() {
-    setImporting(true)
-    const token = await getToken({ template: 'supabase' })
-    const supabase = makeSupabaseClient(() => Promise.resolve(token))
-
-    const { error } = await supabase.from('transactions').upsert(formatted, {
-      onConflict: 'user_id, date, description, amount',
-      ignoreDuplicates: true
-    })
-    
-    if (error) {
-      console.error('Import failed:', error)
-    } else {
-      setImportedCount(formatted.length)
-      setShowSuccess(true)
-      setShowPreview(false)
-      setRows([])
-      setFormatted([])
-    }
-
-    setImporting(false)
   }
 
   function formatRows(rows: any[]) {
@@ -106,6 +81,54 @@ export default function Upload() {
     }))
   }
 
+  async function handleImport() {
+    setImporting(true)
+    const supabase = await getSupabaseClient(getToken)
+
+    // Step 1 — create a csv_imports record to track this upload
+    const { data: importRecord, error: importError } = await supabase
+      .from('csv_imports')
+      .insert({
+        user_id: userId,
+        file_name: fileName,
+        row_count: formatted.length,
+      })
+      .select('id')
+      .single()
+
+    if (importError) {
+      console.error('Failed to create import record:', importError)
+      setImporting(false)
+      return
+    }
+
+    // Step 2 — attach import_id to every transaction row so it can be
+    // bulk deleted later when the user removes this import
+    const withImportId = formatted.map(t => ({
+      ...t,
+      import_id: importRecord.id,
+    }))
+
+    // Step 3 — upsert transactions, skipping duplicates
+    const { error } = await supabase.from('transactions').upsert(withImportId, {
+      onConflict: 'user_id, date, description, amount',
+      ignoreDuplicates: true
+    })
+
+    if (error) {
+      console.error('Import failed:', error)
+    } else {
+      setImportedCount(formatted.length)
+      setShowSuccess(true)
+      setShowPreview(false)
+      setRows([])
+      setFormatted([])
+      setFileName('')
+    }
+
+    setImporting(false)
+  }
+
   function handleUploadAnother() {
     setShowSuccess(false)
     setImportedCount(0)
@@ -116,6 +139,7 @@ export default function Upload() {
     setShowPreview(false)
     setRows([])
     setFormatted([])
+    setFileName('')
   }
 
   return (
@@ -147,7 +171,7 @@ export default function Upload() {
         <button
           className="upload-browse"
           onClick={e => {
-            e.stopPropagation() // prevents double-triggering the zone click
+            e.stopPropagation()
             fileInputRef.current?.click()
           }}
         >

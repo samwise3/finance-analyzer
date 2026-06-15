@@ -1,5 +1,54 @@
 /* App.css */
 
+/* ── Shared button styles ───────────────────────────────────── */
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
+  width: fit-content;
+}
+
+.btn-primary {
+  background: #ffffff;
+  color: #0f1117;
+}
+
+.btn-primary:hover:not(:disabled) { background: #e8eaf0; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-secondary {
+  background: #1e2130;
+  color: #e8eaf0;
+  border: 1px solid #2a2f45;
+}
+
+.btn-secondary:hover:not(:disabled) { background: #252a3a; }
+
+.btn-danger {
+  background: #3b1c1c;
+  color: #f87171;
+  border: 1px solid #5c2a2a;
+}
+
+.btn-danger:hover:not(:disabled) { background: #4a2020; }
+.btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-sm {
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+  border-radius: 0.4rem;
+}
+
 /* ── App shell (signed-in layout) ──────────────────────────── */
 
 /*
