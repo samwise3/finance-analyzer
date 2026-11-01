@@ -129,8 +129,7 @@ src/
 ├── pages/
 │   ├── Dashboard.tsx       Monthly overview
 │   ├── Transactions.tsx    Searchable transaction list
-│   ├── Upload.tsx          File import: parse → map columns → preview → import
-│   ├── Imports.tsx         Past imports, with bulk delete
+│   ├── Upload.tsx          File import (parse → map columns → preview → import) and past imports
 │   ├── ConnectBank.tsx     Plaid account linking
 │   ├── Budget.tsx          Budget plan
 │   └── BudgetVsActual.tsx  Planned vs actual, plus category mapping

@@ -1,12 +1,12 @@
-// Imports.tsx
-// Shows all CSV imports for the current user.
+// ImportHistory.tsx
+// Shows all CSV imports for the current user, below the upload zone on the Upload page.
 // Users can rename imports for readability and delete them.
 // Deleting an import cascades to all its transactions via Postgres foreign key.
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/react'
-import { getSupabaseClient } from '../lib/supabase'
-import './Imports.css'
+import { getSupabaseClient } from '../../lib/supabase'
+import './ImportHistory.css'
 
 interface CsvImport {
   id: string
@@ -15,7 +15,12 @@ interface CsvImport {
   created_at: string
 }
 
-export default function Imports() {
+interface Props {
+  // Bump this after a successful upload so the list refetches
+  refreshKey: number
+}
+
+export default function ImportHistory({ refreshKey }: Props) {
   const { getToken } = useAuth()
 
   const [imports, setImports]       = useState<CsvImport[]>([])
@@ -32,7 +37,7 @@ export default function Imports() {
 
   useEffect(() => {
     fetchImports()
-  }, [])
+  }, [refreshKey])
 
   async function fetchImports() {
     const supabase = await getSupabaseClient(getToken)
@@ -94,8 +99,8 @@ export default function Imports() {
   }
 
   return (
-    <div className="page">
-      <h1>CSV Imports</h1>
+    <section className="import-history">
+      <h2>Past Imports</h2>
       <p className="imports-sub">
         Manage your imported CSV files. Deleting an import removes all its transactions.
       </p>
@@ -174,6 +179,6 @@ export default function Imports() {
           ))}
         </div>
       )}
-    </div>
+    </section>
   )
 }

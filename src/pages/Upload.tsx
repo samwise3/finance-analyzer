@@ -3,6 +3,7 @@
 // Flow: parse file -> map columns to our fields -> preview -> import.
 // On import, creates a csv_imports record first, then attaches import_id
 // to every transaction row so imports can be tracked and bulk-deleted later.
+// Past imports are listed below the upload zone, where they can be renamed or removed.
 
 import React, { useState, useRef } from 'react'
 import './Upload.css'
@@ -17,6 +18,7 @@ import type { ColumnMapping, MappedTransaction, ParsedFile } from '../lib/fileIm
 import SuccessModal from '../components/SuccessModal/SuccessModal'
 import PreviewModal from '../components/PreviewModal/PreviewModal'
 import ColumnMapper from '../components/ColumnMapper/ColumnMapper'
+import ImportHistory from '../components/ImportHistory/ImportHistory'
 
 export default function Upload() {
   const [parsed, setParsed]       = useState<ParsedFile | null>(null)
@@ -30,6 +32,7 @@ export default function Upload() {
   const [formatted, setFormatted] = useState<MappedTransaction[]>([])
   const [fileName, setFileName]   = useState('')
   const [dragging, setDragging]   = useState(false)
+  const [historyKey, setHistoryKey] = useState(0)
 
   const { getToken, userId } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -160,6 +163,7 @@ export default function Upload() {
     } else {
       setImportedCount(formatted.length)
       setShowSuccess(true)
+      setHistoryKey(k => k + 1)
       resetUpload()
     }
 
@@ -214,6 +218,8 @@ export default function Upload() {
       </div>
 
       {error && <p className="upload-error">{error}</p>}
+
+      <ImportHistory refreshKey={historyKey} />
 
       {parsed && mapping && !showPreview && (
         <ColumnMapper

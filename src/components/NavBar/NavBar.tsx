@@ -14,9 +14,8 @@ import './NavBar.css'
 const NAV_ITEMS = [
   { to: '/dashboard',     icon: '📊', label: 'Dashboard'    },
   { to: '/transactions',  icon: '📋', label: 'Transactions'  },
-  { to: '/upload',        icon: '⬆️',  label: 'Upload'        },
+  { to: '/upload',        icon: '⬆️',  label: 'Uploads'       },
   { to: '/connect', icon: '🏦', label: 'Connect Bank' },
-  { to: '/imports', icon: '📁', label: 'Imports'    },
   { to: '/budget',  icon: '🎯', label: 'Budget'     },
   { to: '/spending', icon: '⚖️', label: 'Budget vs Actual' },
 
