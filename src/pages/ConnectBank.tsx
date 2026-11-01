@@ -20,10 +20,19 @@ const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL
 
 // Account types the user can choose from
 const ACCOUNT_TYPES = [
-  { value: 'checking',    label: 'Checking / Savings' },
-  { value: 'credit',      label: 'Credit Card' },
-  { value: 'investment',  label: 'Investment / Retirement' },
+  { value: 'checking',        label: 'Checking / Savings' },
+  { value: 'credit',          label: 'Credit Card' },
+  { value: 'brokerage',       label: 'Brokerage' },
+  { value: 'roth_ira',        label: 'Roth IRA' },
+  { value: 'traditional_ira', label: 'Traditional IRA' },
+  { value: 'roth_401k',       label: 'Roth 401(k)' },
+  { value: '401k',            label: '401(k)' },
 ]
+
+// Accounts saved before investment types were split up still use 'investment'
+const LEGACY_TYPE_LABELS: Record<string, string> = {
+  investment: 'Investment / Retirement',
+}
 
 interface ConnectedAccount {
   id: string
@@ -262,7 +271,9 @@ export default function ConnectBank() {
               <div className="account-item-info">
                 <span className="account-item-name">{account.institution_name ?? 'Unknown'}</span>
                 <span className="account-item-type">
-                  {ACCOUNT_TYPES.find(t => t.value === account.account_type)?.label ?? 'Uncategorized'}
+                  {ACCOUNT_TYPES.find(t => t.value === account.account_type)?.label
+                    ?? LEGACY_TYPE_LABELS[account.account_type ?? '']
+                    ?? 'Uncategorized'}
                 </span>
                 <span className="account-item-date">
                   Connected {new Date(account.created_at).toLocaleDateString()}

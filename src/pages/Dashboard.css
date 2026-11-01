@@ -71,6 +71,12 @@
 .ds-pos     { color: #4ade80; }
 .ds-neg     { color: #f87171; }
 .ds-invest  { color: #60a5fa; }
+.ds-deduction { color: #fbbf24; }
+
+.dash-summary-note {
+  font-size: 0.7rem;
+  color: #8b90a0;
+}
 
 .dash-summary-op {
   font-size: 1rem;

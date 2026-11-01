@@ -6,8 +6,10 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/react'
 import { Link } from 'react-router-dom'
 import { getSupabaseClient } from '../lib/supabase'
-import MonthPicker from '../components/MonthPicker'
-import TransactionTable from '../components/TransactionTable'
+import { fetchPaycheckSummary } from '../lib/paycheck'
+import type { DeductionLine } from '../lib/paycheck'
+import MonthPicker from '../components/MonthPicker/MonthPicker'
+import TransactionTable from '../components/TransactionTable/TransactionTable'
 import './Dashboard.css'
 
 interface SelectedMonth { year: number; month: number }
@@ -98,6 +100,9 @@ export default function Dashboard() {
   const [allocType, setAllocType]             = useState<'from_savings' | 'independent'>('from_savings')
   const [saving, setSaving]                   = useState(false)
   const [budgetLoading, setBudgetLoading]     = useState(true)
+  // Taken out before pay is deposited — shown, but not subtracted from income
+  const [deductions, setDeductions]           = useState<DeductionLine[]>([])
+  const [totalDeductions, setTotalDeductions] = useState(0)
 
   // Pagination
   const PAGE_SIZE = 20
@@ -123,11 +128,12 @@ export default function Dashboard() {
 
   async function fetchBudgetPlan() {
     const supabase = await getSupabaseClient(getToken)
-    const [settingsRes, itemsRes, invRes, bucketsRes] = await Promise.all([
+    const [settingsRes, itemsRes, invRes, bucketsRes, paycheck] = await Promise.all([
       supabase.from('budget_settings').select('*').maybeSingle(),
       supabase.from('budget_items').select('*'),
       supabase.from('investment_accounts').select('*'),
       supabase.from('savings_buckets').select('*').order('created_at', { ascending: true }),
+      fetchPaycheckSummary(supabase),
     ])
 
     if (settingsRes.data) {
@@ -160,6 +166,8 @@ export default function Dashboard() {
     )
     setInvestments(invRes.data ?? [])
     setBuckets(bucketsRes.data ?? [])
+    setDeductions(paycheck.lines)
+    setTotalDeductions(paycheck.totalDeductions)
     setBudgetLoading(false)
   }
 
@@ -291,6 +299,19 @@ export default function Dashboard() {
                 <div className="dash-summary-col">
                   <span className="dash-summary-label">Investments (planned)</span>
                   <span className="dash-summary-value ds-invest">{fmt(totalInvested)}/mo</span>
+                </div>
+              </>
+            )}
+            {!budgetLoading && totalDeductions > 0 && (
+              <>
+                <div className="dash-summary-divider" />
+                <div
+                  className="dash-summary-col"
+                  title={deductions.map(d => `${d.name}: ${fmt(d.amount)}`).join('\n')}
+                >
+                  <span className="dash-summary-label">Paycheck deductions</span>
+                  <span className="dash-summary-value ds-deduction">{fmt(totalDeductions)}/mo</span>
+                  <span className="dash-summary-note">Before deposit · not subtracted</span>
                 </div>
               </>
             )}

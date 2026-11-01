@@ -1,25 +1,33 @@
 // Upload.tsx
-// Lets users import their transaction history via CSV export from their bank.
+// Lets users import their transaction history via CSV or Excel export from their bank.
+// Flow: parse file -> map columns to our fields -> preview -> import.
 // On import, creates a csv_imports record first, then attaches import_id
 // to every transaction row so imports can be tracked and bulk-deleted later.
 
 import React, { useState, useRef } from 'react'
 import './Upload.css'
 
-import Papa from 'papaparse'
 import { useAuth } from '@clerk/react'
 import { getSupabaseClient } from '../lib/supabase'
-import SuccessModal from '../components/SuccessModal'
-import PreviewModal from '../components/PreviewModal'
+import {
+  ACCEPTED_EXTENSIONS, isAcceptedFile, parseFile as parseStatement,
+  guessMapping, loadSavedMapping, saveMapping, applyMapping,
+} from '../lib/fileImport'
+import type { ColumnMapping, MappedTransaction, ParsedFile } from '../lib/fileImport'
+import SuccessModal from '../components/SuccessModal/SuccessModal'
+import PreviewModal from '../components/PreviewModal/PreviewModal'
+import ColumnMapper from '../components/ColumnMapper/ColumnMapper'
 
 export default function Upload() {
-  const [rows, setRows]           = useState<any[]>([])
-  const [headers, setHeaders]     = useState<string[]>([])
+  const [parsed, setParsed]       = useState<ParsedFile | null>(null)
+  const [mapping, setMapping]     = useState<ColumnMapping | null>(null)
+  const [skipped, setSkipped]     = useState(0)
+  const [error, setError]         = useState('')
   const [importing, setImporting] = useState(false)
   const [showSuccess, setShowSuccess]   = useState(false)
   const [importedCount, setImportedCount] = useState(0)
   const [showPreview, setShowPreview]   = useState(false)
-  const [formatted, setFormatted] = useState<any[]>([])
+  const [formatted, setFormatted] = useState<MappedTransaction[]>([])
   const [fileName, setFileName]   = useState('')
   const [dragging, setDragging]   = useState(false)
 
@@ -55,30 +63,62 @@ export default function Upload() {
   }
 
   // Extracted into its own function since both handleFile and handleDrop need it
-  function parseFile(file: File) {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const raw = results.data as any[]
-        setRows(raw)
-        setFormatted(formatRows(raw))
-        setShowPreview(true)
+  async function parseFile(file: File) {
+    setError('')
+
+    if (!isAcceptedFile(file)) {
+      setError(`Unsupported file type. Please upload a ${ACCEPTED_EXTENSIONS.join(', ')} file.`)
+      setFileName('')
+      return
+    }
+
+    try {
+      const result = await parseStatement(file)
+      if (result.headers.length === 0 || result.rows.length === 0) {
+        setError('We couldn\'t find any rows in that file.')
+        setFileName('')
+        return
       }
-    })
+
+      setParsed(result)
+      // Reuse the mapping from the last time this layout was uploaded, if any,
+      // falling back to guesses for any fields it doesn't cover
+      setMapping({
+        ...guessMapping(result.headers, result.rows),
+        ...loadSavedMapping(result.headers),
+      })
+    } catch (err) {
+      console.error('Failed to parse file:', err)
+      setError('We couldn\'t read that file. Make sure it\'s a valid CSV or Excel export.')
+      setFileName('')
+    }
   }
 
-  function formatRows(rows: any[]) {
-    return rows.map(row => ({
-      id: crypto.randomUUID(),
-      user_id: userId,
-      date: row['Post Date'],
-      description: row['Description'],
-      category: null,
-      amount: row['Credit']
-        ? parseFloat(row['Credit'])
-        : parseFloat(row['Debit']) * -1,
-    }))
+  function handleMappingConfirm(confirmed: ColumnMapping) {
+    if (!parsed) return
+    const { transactions, skipped } = applyMapping(parsed.rows, confirmed, userId)
+    saveMapping(parsed.headers, confirmed)
+    setMapping(confirmed)
+    setFormatted(transactions)
+    setSkipped(skipped)
+    setShowPreview(true)
+  }
+
+  // Back from preview keeps the parsed file and mapping so users can adjust it
+  function handleBackToMapping() {
+    setShowPreview(false)
+    setFormatted([])
+  }
+
+  function resetUpload() {
+    setShowPreview(false)
+    setParsed(null)
+    setMapping(null)
+    setFormatted([])
+    setSkipped(0)
+    setFileName('')
+    // Clear the input so selecting the same file again still fires onChange
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   async function handleImport() {
@@ -120,10 +160,7 @@ export default function Upload() {
     } else {
       setImportedCount(formatted.length)
       setShowSuccess(true)
-      setShowPreview(false)
-      setRows([])
-      setFormatted([])
-      setFileName('')
+      resetUpload()
     }
 
     setImporting(false)
@@ -136,24 +173,21 @@ export default function Upload() {
   }
 
   function handleCancel() {
-    setShowPreview(false)
-    setRows([])
-    setFormatted([])
-    setFileName('')
+    resetUpload()
   }
 
   return (
     <div className="page">
       <div className="upload-header">
         <h1>Upload Statements</h1>
-        <p>Import your bank transactions via CSV export.</p>
+        <p>Import your bank transactions via CSV or Excel export.</p>
       </div>
 
       {/* Hidden native file input — triggered by clicking the zone or browse button */}
       <input
         ref={fileInputRef}
         type="file"
-        accept=".csv"
+        accept={ACCEPTED_EXTENSIONS.join(',')}
         onChange={handleFile}
         style={{ display: 'none' }}
       />
@@ -166,8 +200,8 @@ export default function Upload() {
         onDrop={handleDrop}
       >
         <span className="upload-icon">📂</span>
-        <h2>Drag and drop your CSV here</h2>
-        <p>Supports exports from most major banks</p>
+        <h2>Drag and drop your CSV or Excel file here</h2>
+        <p>Supports .csv, .xlsx and .xls exports from most major banks</p>
         <button
           className="upload-browse"
           onClick={e => {
@@ -179,11 +213,26 @@ export default function Upload() {
         </button>
       </div>
 
+      {error && <p className="upload-error">{error}</p>}
+
+      {parsed && mapping && !showPreview && (
+        <ColumnMapper
+          fileName={fileName}
+          headers={parsed.headers}
+          rows={parsed.rows}
+          initialMapping={mapping}
+          onConfirm={handleMappingConfirm}
+          onCancel={handleCancel}
+        />
+      )}
+
       {showPreview && (
         <PreviewModal
           transactions={formatted}
           onConfirm={handleImport}
           onCancel={handleCancel}
+          onBack={handleBackToMapping}
+          skipped={skipped}
           importing={importing}
         />
       )}

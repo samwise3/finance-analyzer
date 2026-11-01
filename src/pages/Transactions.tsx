@@ -5,9 +5,9 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/react'
 import { getSupabaseClient } from '../lib/supabase'
-import TransactionTable from '../components/TransactionTable'
-import SearchBar from '../components/SearchBar'
-import TransactionFilters, { FilterType } from '../components/TransactionFilters'
+import TransactionTable from '../components/TransactionTable/TransactionTable'
+import SearchBar from '../components/SearchBar/SearchBar'
+import TransactionFilters, { FilterType } from '../components/TransactionFilters/TransactionFilters'
 import './Transactions.css'
 
 const PAGE_SIZE = 25

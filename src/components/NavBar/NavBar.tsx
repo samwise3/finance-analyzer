@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { to: '/connect', icon: '🏦', label: 'Connect Bank' },
   { to: '/imports', icon: '📁', label: 'Imports'    },
   { to: '/budget',  icon: '🎯', label: 'Budget'     },
+  { to: '/spending', icon: '⚖️', label: 'Budget vs Actual' },
 
   // TODO: Add these when you build out the later sections:
   // { to: '/credit',     icon: '💳', label: 'Credit Cards'  },

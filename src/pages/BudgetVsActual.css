@@ -1,0 +1,347 @@
+/* BudgetVsActual.css */
+
+.bva-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.bva-header h1 {
+  margin-bottom: 0;
+}
+
+/* Income vs spending summary */
+.bva-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.bva-stat {
+  background: #13161f;
+  border: 1px solid #1e2130;
+  border-radius: 0.875rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bva-stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8b90a0;
+}
+
+.bva-stat-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.bva-stat-value.bva-credit,
+.bva-stat-value.bva-under { color: #4ade80; }
+.bva-stat-value.bva-over  { color: #f87171; }
+
+.bva-stat-value.bva-deduction { color: #fbbf24; }
+
+/* Itemized paycheck deductions inside the stat card */
+.bva-deduction-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  color: #8b90a0;
+}
+
+.bva-deduction-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.bva-deduction-list li span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bva-stat-sub {
+  font-size: 0.8rem;
+  color: #8b90a0;
+}
+
+.bva-error {
+  color: #f87171;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.bva-card {
+  background: #13161f;
+  border: 1px solid #1e2130;
+  border-radius: 0.875rem;
+  overflow: hidden;
+}
+
+/* Category | planned | actual | difference | progress bar */
+.bva-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 110px 120px 160px;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid #1e2130;
+  font-size: 0.9rem;
+}
+
+.bva-head {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8b90a0;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+}
+
+.bva-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bva-name {
+  color: #e8eaf0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bva-under { color: #4ade80; }
+.bva-credit { color: #4ade80; }
+.bva-over  { color: #f87171; }
+
+.bva-bar {
+  height: 6px;
+  background: #1e2130;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bva-bar-fill {
+  height: 100%;
+  background: #60a5fa;
+  border-radius: 999px;
+}
+
+.bva-bar-fill--over {
+  background: #f87171;
+}
+
+.bva-row--unmapped .bva-name,
+.bva-hint--warn {
+  color: #fbbf24;
+}
+
+.bva-hint {
+  font-size: 0.8rem;
+  color: #8b90a0;
+}
+
+.bva-total {
+  font-weight: 600;
+  color: #ffffff;
+  border-bottom: none;
+  background: #0f1117;
+}
+
+.bva-empty {
+  padding: 1.5rem 1.25rem;
+  font-size: 0.875rem;
+  color: #8b90a0;
+  border-bottom: 1px solid #1e2130;
+}
+
+/* ── Mapping panel ── */
+.bva-mapping {
+  margin-top: 2rem;
+}
+
+.bva-mapping-header {
+  margin-bottom: 0.75rem;
+}
+
+.bva-mapping-header h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.bva-mapping-header p {
+  font-size: 0.85rem;
+  color: #8b90a0;
+  margin-top: 0.25rem;
+}
+
+/* Category | description | spent | maps-to select */
+.bva-map-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(160px, 1.4fr) 90px 260px;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid #1e2130;
+  font-size: 0.9rem;
+}
+
+/* Rows are wrapped per category, so only drop the border on the very last one */
+.bva-card > div:last-child > .bva-map-row:last-child {
+  border-bottom: none;
+}
+
+/* Category rows that expand to show their transactions */
+.bva-map-row--expandable {
+  cursor: pointer;
+}
+
+.bva-map-row--expandable:hover {
+  background: #171a24;
+}
+
+.bva-chevron {
+  display: inline-block;
+  width: 1rem;
+  color: #8b90a0;
+  transition: transform 0.15s;
+}
+
+.bva-chevron--open {
+  transform: rotate(90deg);
+}
+
+/* Transactions inside an expanded category */
+.bva-map-row--child {
+  background: #0f1117;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.bva-child-date {
+  padding-left: 1.5rem;
+  color: #8b90a0;
+}
+
+/* Left accent on transactions mapped differently from their category */
+.bva-map-row--overridden {
+  box-shadow: inset 3px 0 0 #c084fc;
+}
+
+.bva-changed {
+  font-size: 0.7rem;
+  color: #c084fc;
+  background: #2d1f3b;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  margin-left: 0.5rem;
+}
+
+.bva-select--inherit {
+  color: #8b90a0;
+}
+
+/* Individually listed uncategorized transactions */
+.bva-map-row--txn .bva-name {
+  color: #8b90a0;
+}
+
+.bva-desc {
+  font-size: 0.85rem;
+  color: #c3c7d4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bva-write-in {
+  cursor: text;
+}
+
+.bva-count {
+  font-size: 0.75rem;
+  color: #8b90a0;
+  margin-left: 0.5rem;
+}
+
+.bva-map-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bva-select {
+  flex: 1;
+  background: #0f1117;
+  color: #e8eaf0;
+  border: 1px solid #1e2130;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.bva-select:focus {
+  outline: none;
+  border-color: #4a5568;
+}
+
+.bva-select--empty {
+  border-color: #78591a;
+  color: #fbbf24;
+}
+
+.bva-auto {
+  font-size: 0.7rem;
+  color: #60a5fa;
+  background: #1c2a3b;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+@media (max-width: 1000px) {
+  .bva-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .bva-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .bva-row {
+    grid-template-columns: 1fr 80px 80px 90px;
+  }
+
+  .bva-row > :nth-child(5) {
+    display: none;
+  }
+
+  .bva-map-row {
+    grid-template-columns: 1fr 80px;
+  }
+
+  .bva-desc {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .bva-map-select-wrap {
+    grid-column: 1 / -1;
+  }
+}

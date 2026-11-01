@@ -1,15 +1,18 @@
 // Budget.tsx
-// Income, savings goals, investment tracking, and monthly expense budget.
+// Income, paycheck deductions, savings goals, investment tracking, and monthly expense budget.
 
 import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '@clerk/react'
 import { getSupabaseClient } from '../lib/supabase'
+import { deductionLines } from '../lib/paycheck'
+import type { PaycheckDeduction } from '../lib/paycheck'
 import './Budget.css'
 
 type ItemType       = 'expense' | 'savings' | 'investment'
 type Frequency      = 'recurring' | 'one_off'
 type IncomeType     = 'pre_tax' | 'post_tax'
 type InvestmentType = '401k' | 'ira' | 'other'
+// Stored in the ira_type column, but applies to 401(k)s as well as IRAs
 type IraType        = 'roth' | 'traditional'
 type TargetType     = 'percent' | 'amount'
 type ProgressView   = 'cy' | 'ytd'
@@ -41,8 +44,9 @@ const TYPE_LABELS: Record<ItemType, string> = {
 const TYPES: ItemType[] = ['expense', 'savings', 'investment']
 
 const EMPTY_ROW = { name: '', amount: '', type: 'expense' as ItemType, frequency: 'recurring' as Frequency }
+const EMPTY_DEDUCTION = { name: '', monthly_amount: '' }
 const EMPTY_INV = {
-  name: '', type: '401k' as InvestmentType, ira_type: 'roth' as IraType,
+  name: '', type: '401k' as InvestmentType, ira_type: 'traditional' as IraType,
   contribution_pct: '', employer_match_pct: '', employer_match_cap: '', monthly_contribution: '',
 }
 
@@ -95,6 +99,12 @@ export default function Budget() {
   const [progressView, setProgressView]       = useState<ProgressView>('cy')
 
 
+  // ── Paycheck deductions ──
+  const [deductions, setDeductions]           = useState<PaycheckDeduction[]>([])
+  const [newDeduction, setNewDeduction]       = useState(EMPTY_DEDUCTION)
+  const [addingDeduction, setAddingDeduction] = useState(false)
+  const [deletingDeductionId, setDeletingDeductionId] = useState<string | null>(null)
+
   // ── Investment accounts ──
   const [investments, setInvestments]         = useState<InvestmentAccount[]>([])
   const [showInvForm, setShowInvForm]         = useState(false)
@@ -109,10 +119,11 @@ export default function Budget() {
 
   async function fetchAll() {
     const supabase = await getSupabaseClient(getToken)
-    const [settingsRes, itemsRes, invRes] = await Promise.all([
+    const [settingsRes, itemsRes, invRes, dedRes] = await Promise.all([
       supabase.from('budget_settings').select('*').maybeSingle(),
       supabase.from('budget_items').select('*').order('created_at', { ascending: true }),
       supabase.from('investment_accounts').select('*').order('created_at', { ascending: true }),
+      supabase.from('paycheck_deductions').select('*').order('created_at', { ascending: true }),
     ])
 
     if (settingsRes.data) {
@@ -140,6 +151,8 @@ export default function Budget() {
 
     setItems(itemsRes.data ?? [])
     setInvestments(invRes.data ?? [])
+    if (dedRes.error) console.error('Failed to load paycheck deductions:', dedRes.error)
+    setDeductions(dedRes.data ?? [])
     setLoading(false)
   }
 
@@ -219,6 +232,27 @@ export default function Budget() {
     setDeleting(false)
   }
 
+  // ── Paycheck deductions ──
+  async function handleAddDeduction() {
+    const amount = parseFloat(newDeduction.monthly_amount)
+    if (!newDeduction.name.trim() || isNaN(amount) || amount < 0) return
+    setAddingDeduction(true)
+    const supabase = await getSupabaseClient(getToken)
+    const { data, error } = await supabase.from('paycheck_deductions')
+      .insert({ user_id: userId, name: newDeduction.name.trim(), monthly_amount: amount })
+      .select().single()
+    if (error) console.error('Failed to add deduction:', error)
+    if (!error && data) { setDeductions(prev => [...prev, data]); setNewDeduction(EMPTY_DEDUCTION) }
+    setAddingDeduction(false)
+  }
+
+  async function handleDeleteDeduction(id: string) {
+    const supabase = await getSupabaseClient(getToken)
+    const { error } = await supabase.from('paycheck_deductions').delete().eq('id', id)
+    if (!error) setDeductions(prev => prev.filter(d => d.id !== id))
+    setDeletingDeductionId(null)
+  }
+
   // ── Investment accounts ──
   async function handleAddInvestment() {
     if (!newInv.name.trim()) return
@@ -229,6 +263,7 @@ export default function Budget() {
       payload.contribution_pct   = parseFloat(newInv.contribution_pct)   || 0
       payload.employer_match_pct = parseFloat(newInv.employer_match_pct) || 0
       payload.employer_match_cap = parseFloat(newInv.employer_match_cap) || 0
+      payload.ira_type           = newInv.ira_type
     } else {
       payload.monthly_contribution = parseFloat(newInv.monthly_contribution) || 0
       if (newInv.type === 'ira') payload.ira_type = newInv.ira_type
@@ -268,6 +303,10 @@ export default function Budget() {
     .reduce((sum, a) => sum + calc401k(a, monthlyGross).employer, 0)
 
   const totalAllocated = totalItems + totalInvested
+
+  // 401(k)s are included automatically; these are already out of each paycheck
+  const paycheckDeductions = deductionLines(deductions, investments, monthlyGross)
+  const totalDeductions    = paycheckDeductions.reduce((s, d) => s + d.amount, 0)
   const remaining      = monthlyNet - totalAllocated
 
   // ── Savings goal derived ──
@@ -576,6 +615,82 @@ export default function Budget() {
         </div>
       )}
 
+      {/* ── Paycheck deductions table ── */}
+      {!loading && (
+        <div className="budget-table-section" style={{ marginBottom: '2rem' }}>
+          <div className="budget-table-header"><h2>Paycheck Deductions</h2></div>
+          <p className="deduction-note">
+            Taken out before your paycheck is deposited, so they aren't subtracted from income you receive.
+          </p>
+          <div className="budget-table-card">
+            <div className="bt-row bt-head">
+              <span className="bt-col-name">Deduction</span>
+              <span className="bt-col-type">Source</span>
+              <span className="bt-col-freq" />
+              <span className="bt-col-amount">Monthly</span>
+              <span className="bt-col-action" />
+            </div>
+
+            {paycheckDeductions.length === 0 && <div className="bt-empty">No deductions yet — add one below.</div>}
+
+            {paycheckDeductions.map(d => (
+              <div key={d.key} className="bt-row bt-data-row">
+                <span className="bt-col-name">{d.name}</span>
+                <span className="bt-col-type">
+                  <span className={`type-badge ${d.source === '401k' ? 'inv-type-401k' : 'type-deduction'}`}>
+                    {d.source === '401k' ? '401(k)' : 'Deduction'}
+                  </span>
+                </span>
+                <span className="bt-col-freq" />
+                <span className="bt-col-amount bt-amount">{fmt(d.amount)}</span>
+                <span className="bt-col-action">
+                  {/* 401(k) lines are managed in Investments & Retirement below */}
+                  {d.source === 'manual' && (deletingDeductionId === d.key ? (
+                    <div className="bt-confirm-delete">
+                      <button className="btn-danger btn-sm" onClick={() => handleDeleteDeduction(d.key)}>Delete</button>
+                      <button className="btn-secondary btn-sm" onClick={() => setDeletingDeductionId(null)}>Cancel</button>
+                    </div>
+                  ) : (
+                    <button className="bt-delete-btn" onClick={() => setDeletingDeductionId(d.key)}>✕</button>
+                  ))}
+                </span>
+              </div>
+            ))}
+
+            <div className="bt-row bt-add-row">
+              <input className="bt-input bt-col-name" placeholder="e.g. Health insurance, HSA..."
+                value={newDeduction.name} onChange={e => setNewDeduction(d => ({ ...d, name: e.target.value }))}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddDeduction() }} />
+              <span className="bt-col-type" />
+              <span className="bt-col-freq" />
+              <span className="bt-col-amount">
+                <div className="bt-amount-wrap">
+                  <span className="bt-amount-prefix">$</span>
+                  <input className="bt-input bt-amount-input" placeholder="0" type="number" min="0"
+                    value={newDeduction.monthly_amount} onChange={e => setNewDeduction(d => ({ ...d, monthly_amount: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter') handleAddDeduction() }} />
+                </div>
+              </span>
+              <span className="bt-col-action">
+                <button className="bt-add-btn" onClick={handleAddDeduction}
+                  disabled={addingDeduction || !newDeduction.name.trim() || !newDeduction.monthly_amount}>
+                  {addingDeduction ? '...' : '+ Add'}
+                </button>
+              </span>
+            </div>
+
+            {paycheckDeductions.length > 0 && (
+              <div className="bt-row bt-total">
+                <span className="bt-col-name">Total deductions</span>
+                <span className="bt-col-type" /><span className="bt-col-freq" />
+                <span className="bt-col-amount">{fmt(totalDeductions)}</span>
+                <span className="bt-col-action" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Budget items table ── */}
       {!loading && (
         <div className="budget-table-section">
@@ -679,7 +794,7 @@ export default function Budget() {
                   <div className="income-type-toggle">
                     {(['401k', 'ira', 'other'] as InvestmentType[]).map(t => (
                       <button key={t} className={`income-type-btn ${newInv.type === t ? 'active' : ''}`}
-                        onClick={() => setNewInv(f => ({ ...f, type: t }))}>
+                        onClick={() => setNewInv(f => ({ ...f, type: t, ira_type: t === '401k' ? 'traditional' : 'roth' }))}>
                         {t === '401k' ? '401(k)' : t === 'ira' ? 'IRA' : 'Other'}
                       </button>
                     ))}
@@ -688,13 +803,20 @@ export default function Budget() {
                 <div className="inv-field inv-field--grow">
                   <label>Account name</label>
                   <input className="bt-input"
-                    placeholder={newInv.type === '401k' ? 'e.g. Fidelity 401(k)' : newInv.type === 'ira' ? 'e.g. Roth IRA' : 'e.g. Brokerage'}
+                    placeholder={newInv.type === '401k' ? (newInv.ira_type === 'roth' ? 'e.g. Fidelity Roth 401(k)' : 'e.g. Fidelity 401(k)') : newInv.type === 'ira' ? 'e.g. Roth IRA' : 'e.g. Brokerage'}
                     value={newInv.name} onChange={e => setNewInv(f => ({ ...f, name: e.target.value }))} />
                 </div>
               </div>
 
               {newInv.type === '401k' && (
                 <div className="inv-form-row">
+                  <div className="inv-field">
+                    <label>Tax treatment</label>
+                    <div className="income-type-toggle">
+                      <button className={`income-type-btn ${newInv.ira_type === 'traditional' ? 'active' : ''}`} onClick={() => setNewInv(f => ({ ...f, ira_type: 'traditional' }))}>Traditional</button>
+                      <button className={`income-type-btn ${newInv.ira_type === 'roth' ? 'active' : ''}`} onClick={() => setNewInv(f => ({ ...f, ira_type: 'roth' }))}>Roth</button>
+                    </div>
+                  </div>
                   <div className="inv-field">
                     <label>Your contribution</label>
                     <div className="inv-pct-wrap">

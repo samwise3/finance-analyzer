@@ -1,7 +1,7 @@
 // App.tsx
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Show, SignIn } from '@clerk/react'
-import NavBar from './components/NavBar'
+import NavBar from './components/NavBar/NavBar'
 import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
 import Upload from './pages/Upload'
@@ -9,8 +9,9 @@ import './App.css'
 import ConnectBank from './pages/ConnectBank'
 import Imports from './pages/Imports'
 import Budget from './pages/Budget'
+import BudgetVsActual from './pages/BudgetVsActual'
 import { useState } from 'react'
-import CautionCard from './components/CautionCard'
+import CautionCard from './components/CautionCard/CautionCard'
 
 
 
@@ -65,6 +66,7 @@ export default function App() {
               <Route path="/connect" element={<ConnectBank />} />
               <Route path="/imports" element={<Imports />} />
               <Route path="/budget"  element={<Budget />} />
+              <Route path="/spending" element={<BudgetVsActual />} />
             </Routes>
           </main>
         </div>
