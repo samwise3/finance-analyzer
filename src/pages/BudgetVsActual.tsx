@@ -1,6 +1,6 @@
 // BudgetVsActual.tsx
-// Compares each planned expense from the budget against what was actually
-// spent in the selected month. Transaction categories come from bank imports
+// Compares each recurring budget item (expenses, savings, and investments)
+// against what actually happened in the selected month. Transaction categories come from bank imports
 // and rarely match budget item names, so users map each category to a
 // budget item, Other, a written-in bucket, or exclude it in the mapping panel
 // below the table. Uncategorized transactions are listed and mapped one by one.
@@ -76,6 +76,12 @@ function fmt(n: number) {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
+const TYPE_SECTIONS: { type: BudgetItem['type']; label: string }[] = [
+  { type: 'expense',    label: 'Expenses' },
+  { type: 'savings',    label: 'Savings' },
+  { type: 'investment', label: 'Investments' },
+]
+
 function fmtCents(n: number) {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 }
@@ -128,13 +134,20 @@ export default function BudgetVsActual() {
   }, [userId])
 
   useEffect(() => { fetchBudgetItems() }, [])
+
+  // Pick up budget changes made in another tab when the user comes back
+  useEffect(() => {
+    function handleVisible() { if (document.visibilityState === 'visible') fetchBudgetItems() }
+    document.addEventListener('visibilitychange', handleVisible)
+    return () => document.removeEventListener('visibilitychange', handleVisible)
+  }, [])
   useEffect(() => { fetchTransactions() }, [selectedMonth])
 
   async function fetchBudgetItems() {
     const supabase = await getSupabaseClient(getToken)
     const [itemsRes, paycheck] = await Promise.all([
       supabase.from('budget_items').select('*')
-        .eq('type', 'expense').eq('frequency', 'recurring')
+        .eq('frequency', 'recurring')
         .order('created_at', { ascending: true }),
       fetchPaycheckSummary(supabase),
     ])
@@ -318,6 +331,13 @@ export default function BudgetVsActual() {
   const totalPlanned  = items.reduce((s, i) => s + i.amount, 0)
   const totalActual   = [...actualByTarget.values()].reduce((s, n) => s + n, 0) + unmappedTotal
 
+  // Money moved to savings/investment items isn't spending, so split it out
+  const totalSaved = items
+    .filter(i => i.type !== 'expense')
+    .reduce((s, i) => s + (actualByTarget.get(i.id) ?? 0), 0)
+  const totalSpent = totalActual - totalSaved
+  const leftOver   = actualIncome - totalSpent - totalSaved
+
   // Dropdown (or write-in box) for choosing what a row maps to. For a
   // transaction inside an expanded category, pass the category as parent: the
   // dropdown shows the category's mapping until overridden, and picking the
@@ -402,17 +422,20 @@ export default function BudgetVsActual() {
         </div>
         <div className="bva-stat">
           <span className="bva-stat-label">Spent</span>
-          <span className="bva-stat-value">{fmt(totalActual)}</span>
+          <span className="bva-stat-value">{fmt(totalSpent)}</span>
           <span className="bva-stat-sub">
-            {actualIncome > 0 ? `${Math.round((totalActual / actualIncome) * 100)}% of income` : 'Mark paychecks below to compare'}
+            {actualIncome > 0 ? `${Math.round((totalSpent / actualIncome) * 100)}% of income` : 'Mark paychecks below to compare'}
+            {totalSaved !== 0 && ` · ${fmt(totalSaved)} to savings & investments`}
           </span>
         </div>
         <div className="bva-stat">
           <span className="bva-stat-label">Left over</span>
-          <span className={`bva-stat-value ${actualIncome - totalActual < 0 ? 'bva-over' : 'bva-under'}`}>
-            {actualIncome - totalActual < 0 ? `-${fmt(totalActual - actualIncome)}` : fmt(actualIncome - totalActual)}
+          <span className={`bva-stat-value ${leftOver < 0 ? 'bva-over' : 'bva-under'}`}>
+            {leftOver < 0 ? `-${fmt(-leftOver)}` : fmt(leftOver)}
           </span>
-          <span className="bva-stat-sub">Income minus spending</span>
+          <span className="bva-stat-sub">
+            {totalSaved !== 0 ? 'Income minus spending and saving' : 'Income minus spending'}
+          </span>
         </div>
         <div className="bva-stat">
           <span className="bva-stat-label">Paycheck deductions</span>
@@ -440,27 +463,38 @@ export default function BudgetVsActual() {
         </div>
 
         {items.length === 0 && !loading && (
-          <div className="bva-empty">No recurring expenses in your budget yet. Add some on the Budget page.</div>
+          <div className="bva-empty">No recurring items in your budget yet. Add some on the Budget page.</div>
         )}
 
-        {items.map(item => {
-          const actual = actualByTarget.get(item.id) ?? 0
-          const diff   = item.amount - actual
-          const pct    = item.amount > 0 ? actual / item.amount : actual > 0 ? 1 : 0
+        {TYPE_SECTIONS.map(({ type, label }) => {
+          const sectionItems = items.filter(i => i.type === type)
+          if (sectionItems.length === 0) return null
           return (
-            <div key={item.id} className="bva-row">
-              <span className="bva-name">{item.name}</span>
-              <span className="bva-num">{fmt(item.amount)}</span>
-              <span className="bva-num">{fmt(actual)}</span>
-              <span className={`bva-num ${diff < 0 ? 'bva-over' : 'bva-under'}`}>
-                {diff < 0 ? `-${fmt(-diff)}` : fmt(diff)}
-              </span>
-              <div className="bva-bar" title={`${Math.round(pct * 100)}%`}>
-                <div
-                  className={`bva-bar-fill ${pct > 1 ? 'bva-bar-fill--over' : ''}`}
-                  style={{ width: `${Math.min(pct, 1) * 100}%` }}
-                />
-              </div>
+            <div key={type}>
+              <div className="bva-section">{label}</div>
+              {sectionItems.map(item => {
+                const actual = actualByTarget.get(item.id) ?? 0
+                const diff   = item.amount - actual
+                const pct    = item.amount > 0 ? actual / item.amount : actual > 0 ? 1 : 0
+                // Going over is bad for expenses but good for savings/investments
+                const onTrack = type === 'expense' ? diff >= 0 : diff <= 0
+                return (
+                  <div key={item.id} className="bva-row">
+                    <span className="bva-name">{item.name}</span>
+                    <span className="bva-num">{fmt(item.amount)}</span>
+                    <span className="bva-num">{fmt(actual)}</span>
+                    <span className={`bva-num ${onTrack ? 'bva-under' : 'bva-over'}`}>
+                      {diff < 0 ? `-${fmt(-diff)}` : fmt(diff)}
+                    </span>
+                    <div className="bva-bar" title={`${Math.round(pct * 100)}%`}>
+                      <div
+                        className={`bva-bar-fill ${type === 'expense' && pct > 1 ? 'bva-bar-fill--over' : ''}`}
+                        style={{ width: `${Math.min(pct, 1) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )
         })}

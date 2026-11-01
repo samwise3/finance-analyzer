@@ -110,6 +110,18 @@
   padding-bottom: 0.7rem;
 }
 
+/* Section label above each budget item type in the table */
+.bva-section {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b90a0;
+  background: #0f1117;
+  border-bottom: 1px solid #1e2130;
+}
+
 .bva-num {
   text-align: right;
   font-variant-numeric: tabular-nums;
